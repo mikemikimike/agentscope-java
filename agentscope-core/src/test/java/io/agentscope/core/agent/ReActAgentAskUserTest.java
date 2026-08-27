@@ -325,6 +325,8 @@ class ReActAgentAskUserTest {
 
     @Test
     void formatAnswersHandlesScalarsListsMapsAndSkips() {
+        assertEquals(
+                "The user did not answer any question.", AskUserResult.formatAnswers(null));
         Map<String, Object> nullAnswer = new HashMap<>();
         nullAnswer.put("q_0", null);
         assertEquals("q_0: (no answer)", AskUserResult.formatAnswers(nullAnswer));
@@ -343,5 +345,29 @@ class ReActAgentAskUserTest {
                                 Map.of("selected", List.of("a", "b"), "text", "custom note"))));
         assertEquals(
                 "The user did not answer any question.", AskUserResult.formatAnswers(Map.of()));
+        assertEquals(
+                "q_5: (no answer)",
+                AskUserResult.formatAnswers(Map.of("q_5", List.of())));
+        assertEquals(
+                "q_6: (no answer)",
+                AskUserResult.formatAnswers(Map.of("q_6", Map.of())));
+        assertEquals("q_7: 42", AskUserResult.formatAnswers(Map.of("q_7", 42)));
+    }
+
+    @Test
+    void eventJsonConstructorsHandleMissingCollections() {
+        RequireUserAskEvent ask = new RequireUserAskEvent("id", "time", "reply", null);
+        assertEquals("reply", ask.getReplyId());
+        assertTrue(ask.getToolCalls().isEmpty());
+
+        UserAskResultEvent result = new UserAskResultEvent("id", "time", "reply", null);
+        assertEquals("reply", result.getReplyId());
+        assertTrue(result.getAskUserResults().isEmpty());
+    }
+
+    @Test
+    void askUserResultRejectsMissingToolCallId() {
+        assertThrows(IllegalArgumentException.class, () -> new AskUserResult(null, Map.of()));
+        assertThrows(IllegalArgumentException.class, () -> new AskUserResult("", Map.of()));
     }
 }
